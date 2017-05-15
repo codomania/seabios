@@ -25,6 +25,7 @@
 #include "x86.h" // cpuid
 #include "xen.h" // xen_biostable_setup
 #include "stacks.h" // yield
+#include "sev.h" // sev_detect
 
 // Amount of continuous ram under 4Gig
 u32 RamSize;
@@ -99,6 +100,7 @@ static void qemu_detect(void)
         break;
     }
     kvm_detect();
+    sev_detect();
 }
 
 void

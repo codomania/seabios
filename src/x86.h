@@ -21,6 +21,7 @@
 #ifndef __ASSEMBLY__
 
 #include "types.h" // u32
+#include "sev.h"   // sev_enabled
 
 static inline void irq_disable(void)
 {
@@ -165,30 +166,108 @@ static inline u32 inl(u16 port) {
     return value;
 }
 
+static inline void sev_insb(u16 port, u8 *data, u32 count)
+{
+    while(count) {
+        *data = inb(port);
+        count--;
+        data++;
+    }
+}
+
+static inline void sev_insw(u16 port, u16 *data, u32 count)
+{
+    while(count) {
+        *data = inw(port);
+        count--;
+        data++;
+    }
+}
+
+static inline void sev_insl(u16 port, u32 *data, u32 count)
+{
+    while(count) {
+        *data = inl(port);
+        count--;
+        data++;
+    }
+}
+
+static inline void sev_outsb(u16 port, u8 *data, u32 count)
+{
+    while(count) {
+        outb(port, *data);
+        count--;
+        data++;
+    }
+}
+
+static inline void sev_outsw(u16 port, u16 *data, u32 count)
+{
+    while(count) {
+        outw(port, *data);
+        count--;
+        data++;
+    }
+}
+
+static inline void sev_outsl(u16 port, u32 *data, u32 count)
+{
+    while(count) {
+        outl(port, *data);
+        count--;
+        data++;
+    }
+}
+
 static inline void insb(u16 port, u8 *data, u32 count) {
-    asm volatile("rep insb (%%dx), %%es:(%%edi)"
+    if (sev_enabled()) {
+        sev_insb(port, data, count);
+    } else {
+        asm volatile("rep insb (%%dx), %%es:(%%edi)"
                  : "+c"(count), "+D"(data) : "d"(port) : "memory");
+    }
 }
 static inline void insw(u16 port, u16 *data, u32 count) {
-    asm volatile("rep insw (%%dx), %%es:(%%edi)"
+    if (sev_enabled()) {
+        sev_insw(port, data, count);
+    } else {
+        asm volatile("rep insw (%%dx), %%es:(%%edi)"
                  : "+c"(count), "+D"(data) : "d"(port) : "memory");
+    }
 }
 static inline void insl(u16 port, u32 *data, u32 count) {
-    asm volatile("rep insl (%%dx), %%es:(%%edi)"
+    if (sev_enabled()) {
+        sev_insl(port, data, count);
+    } else {
+        asm volatile("rep insl (%%dx), %%es:(%%edi)"
                  : "+c"(count), "+D"(data) : "d"(port) : "memory");
+    }
 }
 // XXX - outs not limited to es segment
 static inline void outsb(u16 port, u8 *data, u32 count) {
-    asm volatile("rep outsb %%es:(%%esi), (%%dx)"
+    if (sev_enabled()) {
+        sev_outsb(port, data, count);
+    } else {
+        asm volatile("rep outsb %%es:(%%esi), (%%dx)"
                  : "+c"(count), "+S"(data) : "d"(port) : "memory");
+    }
 }
 static inline void outsw(u16 port, u16 *data, u32 count) {
-    asm volatile("rep outsw %%es:(%%esi), (%%dx)"
+    if (sev_enabled()) {
+        sev_outsw(port, data, count);
+    } else {
+        asm volatile("rep outsw %%es:(%%esi), (%%dx)"
                  : "+c"(count), "+S"(data) : "d"(port) : "memory");
+    }
 }
 static inline void outsl(u16 port, u32 *data, u32 count) {
-    asm volatile("rep outsl %%es:(%%esi), (%%dx)"
+    if (sev_enabled()) {
+        sev_outsl(port, data, count);
+    } else {
+        asm volatile("rep outsl %%es:(%%esi), (%%dx)"
                  : "+c"(count), "+S"(data) : "d"(port) : "memory");
+    }
 }
 
 /* Compiler barrier is enough as an x86 CPU does not reorder reads or writes */
